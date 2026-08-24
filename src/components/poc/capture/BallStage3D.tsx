@@ -71,6 +71,8 @@ const MARK_MATERIALS: Record<BallMeshMark, MaterialParameterValue> = {
   "mark-ultra": markMaterial("mark-ultra"),
 };
 
+const HIDDEN_MARK_SCALE: [number, number, number] = [0, 0, 0];
+
 export type BallStage3DProps = {
   offset: SharedValue<number>;
   reducedMotion: boolean;
@@ -148,6 +150,41 @@ function SceneColorGrading(): null {
   return null;
 }
 
+function BallMarkings({ variant }: Pick<BallStage3DProps, "variant">): JSX.Element {
+  const visibleMarks = filamentSurface(variant).meshMarks;
+  const scaleForMark = (mark: BallMeshMark) =>
+    visibleMarks.includes(mark) ? filamentMarkScale(variant, mark) : HIDDEN_MARK_SCALE;
+
+  return (
+    <>
+      <EntitySelector
+        byName="mark-ultra"
+        materialParameters={{ index: 0, parameters: MARK_MATERIALS["mark-ultra"] }}
+        multiplyWithCurrentTransform={false}
+        scale={scaleForMark("mark-ultra")}
+      />
+      <EntitySelector
+        byName="mark-great"
+        materialParameters={{ index: 0, parameters: MARK_MATERIALS["mark-great"] }}
+        multiplyWithCurrentTransform={false}
+        scale={scaleForMark("mark-great")}
+      />
+      <EntitySelector
+        byName="mark-master-patch"
+        materialParameters={{ index: 0, parameters: MARK_MATERIALS["mark-master-patch"] }}
+        multiplyWithCurrentTransform={false}
+        scale={scaleForMark("mark-master-patch")}
+      />
+      <EntitySelector
+        byName="mark-master-emblem"
+        materialParameters={{ index: 0, parameters: MARK_MATERIALS["mark-master-emblem"] }}
+        multiplyWithCurrentTransform={false}
+        scale={scaleForMark("mark-master-emblem")}
+      />
+    </>
+  );
+}
+
 function BallModel({ offset, variant }: Pick<BallStage3DProps, "offset" | "variant">): JSX.Element {
   const upperTexture = useBallFilamentTextures()[variant];
   const filamentOffset = useFilamentSharedValueBridge(offset, 0);
@@ -155,11 +192,6 @@ function BallModel({ offset, variant }: Pick<BallStage3DProps, "offset" | "varia
     "worklet";
     return [0, -filamentOffset.value * TURN_PER_SLOT, 0] as [number, number, number];
   }, [filamentOffset]);
-  const surface = filamentSurface(variant);
-  const scaleFor = (mark: BallMeshMark) =>
-    surface.meshMarks.includes(mark)
-      ? filamentMarkScale(variant, mark)
-      : ([0, 0, 0] as [number, number, number]);
 
   return (
     <Model multiplyWithCurrentTransform={false} rotate={rotation} source={BALL_MODEL_SOURCE}>
@@ -184,31 +216,7 @@ function BallModel({ offset, variant }: Pick<BallStage3DProps, "offset" | "varia
         byName="button"
         materialParameters={{ index: 0, parameters: BALL_GLTF_MATERIALS.button }}
       />
-
-      <EntitySelector
-        byName="mark-ultra"
-        materialParameters={{ index: 0, parameters: MARK_MATERIALS["mark-ultra"] }}
-        multiplyWithCurrentTransform={false}
-        scale={scaleFor("mark-ultra")}
-      />
-      <EntitySelector
-        byName="mark-great"
-        materialParameters={{ index: 0, parameters: MARK_MATERIALS["mark-great"] }}
-        multiplyWithCurrentTransform={false}
-        scale={scaleFor("mark-great")}
-      />
-      <EntitySelector
-        byName="mark-master-patch"
-        materialParameters={{ index: 0, parameters: MARK_MATERIALS["mark-master-patch"] }}
-        multiplyWithCurrentTransform={false}
-        scale={scaleFor("mark-master-patch")}
-      />
-      <EntitySelector
-        byName="mark-master-emblem"
-        materialParameters={{ index: 0, parameters: MARK_MATERIALS["mark-master-emblem"] }}
-        multiplyWithCurrentTransform={false}
-        scale={scaleFor("mark-master-emblem")}
-      />
+      <BallMarkings variant={variant} />
     </Model>
   );
 }

@@ -1,8 +1,28 @@
 # Choose Your Ball
 
-Standalone React Native showcase extracted from the Pokémon Card capture experience. This repository contains only the **Choose Ball** screen and renders its hero ball with [`react-native-filament`](https://github.com/margelo/react-native-filament).
+A polished, standalone React Native showcase extracted from the Pokémon Card capture experience. It preserves the original art direction, interaction formulas, and 26-ball catalog while rendering the hero ball with [`react-native-filament`](https://github.com/margelo/react-native-filament).
 
 The original `pokemon-card` project remains on its Three.js/WebGPU renderer. This repository is the separate Filament implementation intended for client review.
+
+## Showcase
+
+<p align="center">
+  <a href="./media/choose-your-ball-showcase.mp4">
+    <img
+      src="./media/choose-your-ball-showcase-poster.jpg"
+      alt="Choose Your Ball — React Native Filament showcase"
+      width="395"
+    />
+  </a>
+</p>
+
+<p align="center">
+  <a href="./media/choose-your-ball-showcase.mp4"><strong>▶ Watch the 60-second showcase</strong></a>
+  ·
+  <a href="https://x.com/TrninhHuy1/status/2084748199903011268">View the original post on X ↗</a>
+</p>
+
+The showcase demonstrates the full selection loop: horizontal swipe and thumbnail navigation, spring-settled transitions, complete shell rotation, vertical free-look, and glossy HDR material response across the ball catalog.
 
 ## What is included
 

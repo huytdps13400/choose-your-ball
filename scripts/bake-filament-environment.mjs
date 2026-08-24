@@ -37,6 +37,10 @@ const rgba = readFileSync(rgbaSource);
 if (rgba.length !== width * height * 4) throw new Error("Unexpected decoded RGBE byte count");
 const hdr = [Buffer.from(`#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y ${height} +X ${width}\n`)];
 for (let y = 0; y < height; y += 1) {
+  // Three's DataTexture uploads the decoded RGBE rows without flipY. cmgen's
+  // equirectangular importer uses the opposite vertical convention, so feed
+  // it bottom-to-top rows to preserve the room orientation seen by Three.
+  const sourceY = height - 1 - y;
   hdr.push(Buffer.from([2, 2, width >> 8, width & 255]));
   for (let channel = 0; channel < 4; channel += 1) {
     for (let x = 0; x < width; x += 128) {
@@ -44,7 +48,10 @@ for (let y = 0; y < height; y += 1) {
       const literal = Buffer.alloc(count + 1);
       literal[0] = count;
       for (let i = 0; i < count; i += 1) {
-        literal[i + 1] = rgba[(y * width + x + i) * 4 + channel];
+        // Filament's equirectangular forward axis is half a turn from the
+        // Three/PMREM room orientation, so preserve that yaw in the bake.
+        const sourceX = (x + i + width / 2) % width;
+        literal[i + 1] = rgba[(sourceY * width + sourceX) * 4 + channel];
       }
       hdr.push(literal);
     }

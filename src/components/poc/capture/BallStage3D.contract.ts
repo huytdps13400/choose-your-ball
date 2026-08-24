@@ -26,6 +26,13 @@ export const FILAMENT_CAMERA = {
   up: [0, 1, 0] as Vec3,
 } as const;
 
+export const FILAMENT_COLOR_GRADING = {
+  exposureStops: Math.log2(1.15),
+  toneMapper: "acesLegacy",
+} as const;
+
+export const FILAMENT_ENVIRONMENT_INTENSITY = 30_000;
+
 export function cameraProjectionArguments(): [number, number, number, number, "vertical"] {
   "worklet";
   return [
@@ -77,6 +84,10 @@ export function hexToLinearRgba(hex: string): Vec4 {
   ];
 }
 
+// Measured output compensation for Filament's linear PBR + ACES Legacy path;
+// this keeps the neutral #E7E7E7 Three hardware neutral under the warehouse IBL.
+const FILAMENT_NEUTRAL_HARDWARE_COMPENSATION: Vec4 = [1.16, 1.32, 1.65, 1];
+
 export const BALL_GLTF_MATERIALS = {
   band: {
     baseColorFactor: hexToLinearRgba(BALL_HARDWARE_COLORS.band),
@@ -84,12 +95,12 @@ export const BALL_GLTF_MATERIALS = {
     roughnessFactor: 0.14,
   },
   button: {
-    baseColorFactor: hexToLinearRgba(BALL_HARDWARE_COLORS.button),
+    baseColorFactor: FILAMENT_NEUTRAL_HARDWARE_COMPENSATION,
     metallicFactor: 0,
     roughnessFactor: 0,
   },
   lower: {
-    baseColorFactor: hexToLinearRgba(BALL_HARDWARE_COLORS.lower),
+    baseColorFactor: FILAMENT_NEUTRAL_HARDWARE_COMPENSATION,
     metallicFactor: 0,
     roughnessFactor: 0,
   },

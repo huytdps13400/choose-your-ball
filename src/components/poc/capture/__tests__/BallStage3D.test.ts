@@ -9,6 +9,8 @@ import {
   BALL_HARDWARE_COLORS,
   BALL_ENTITY_NAMES,
   FILAMENT_CAMERA,
+  FILAMENT_COLOR_GRADING,
+  FILAMENT_ENVIRONMENT_INTENSITY,
   FILAMENT_LIGHT_UNIT_SCALE,
   ballViewport,
   cameraProjectionArguments,
@@ -58,6 +60,11 @@ describe("BallStage3D Filament parity contract", () => {
       up: [0, 1, 0],
     });
     expect(cameraProjectionArguments()).toEqual([26, 1, 0.1, 100, "vertical"]);
+    expect(FILAMENT_COLOR_GRADING).toEqual({
+      exposureStops: Math.log2(1.15),
+      toneMapper: "acesLegacy",
+    });
+    expect(FILAMENT_ENVIRONMENT_INTENSITY).toBe(30_000);
     expect(ballViewport(320)).toEqual({ center: [160, 160], height: 320, width: 320 });
   });
 
@@ -113,6 +120,8 @@ describe("BallStage3D Filament parity contract", () => {
       button: "#E7E7E7",
       lower: "#E7E7E7",
     });
+    expect(BALL_GLTF_MATERIALS.button.baseColorFactor).toEqual([1.16, 1.32, 1.65, 1]);
+    expect(BALL_GLTF_MATERIALS.lower.baseColorFactor).toEqual([1.16, 1.32, 1.65, 1]);
     expect(BALL_GLTF_MATERIALS.upper).toEqual({
       baseColorFactor: [1, 1, 1, 1],
       metallicFactor: 0.1,
@@ -144,6 +153,7 @@ describe("BallStage3D Filament parity contract", () => {
     expect(rendererSource.match(/<EntitySelector\b/g) ?? []).toHaveLength(8);
     expect(rendererSource).toContain("enableTransparentRendering");
     expect(rendererSource).toContain("<EnvironmentalLight");
+    expect(rendererSource).toContain("engine.setACESLegacyColorGrading(");
     expect(rendererSource).toContain('require("../../../../assets/env/warehouse-ibl.ktx")');
     expect(rendererSource).toContain("useFilamentSharedValueBridge(tilt, 0)");
     expect(rendererSource).toContain("useFilamentSharedValueBridge(offset, 0)");

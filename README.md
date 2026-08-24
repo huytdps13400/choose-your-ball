@@ -51,7 +51,7 @@ npm run bake:filament-shells
 CMGEN_BIN=/path/to/filament/bin/cmgen npm run bake:filament-environment
 ```
 
-`warehouse.png` stores Radiance RGBE data: RGB contains mantissas and alpha contains the shared exponent. The environment script reconstructs the HDR stream before calling `cmgen`; treating it as an ordinary PNG destroys the highlight range and makes the ball look flat.
+`warehouse.png` stores Radiance RGBE data: RGB contains mantissas and alpha contains the shared exponent. The environment script reconstructs the HDR stream before calling `cmgen`; treating it as an ordinary PNG destroys the highlight range and makes the ball look flat. It also flips the equirectangular rows and applies the 180-degree yaw required to preserve the original Three/PMREM room orientation in Filament, keeping the photographed softbox reflections on the same parts of the shell.
 
 ## Key files
 

@@ -1,0 +1,140 @@
+diff --git a/node_modules/react-native-filament/cpp/core/RNFEngineImpl.cpp b/node_modules/react-native-filament/cpp/core/RNFEngineImpl.cpp
+index b82b0ac..d6a614c 100644
+--- a/node_modules/react-native-filament/cpp/core/RNFEngineImpl.cpp
++++ b/node_modules/react-native-filament/cpp/core/RNFEngineImpl.cpp
+@@ -9,6 +9,7 @@
+ 
+ #include <filament/Camera.h>
+ #include <filament/Color.h>
++#include <filament/ColorGrading.h>
+ #include <filament/Engine.h>
+ #include <filament/Fence.h>
+ #include <filament/IndirectLight.h>
+@@ -17,6 +18,7 @@
+ #include <filament/Scene.h>
+ #include <filament/SwapChain.h>
+ #include <filament/TransformManager.h>
++#include <filament/ToneMapper.h>
+ #include <filament/View.h>
+ #include <filament/Viewport.h>
+ #include <utils/Entity.h>
+@@ -313,6 +315,30 @@ void EngineImpl::setIndirectLight(std::shared_ptr<FilamentBuffer> iblBuffer, std
+   _scene->setIndirectLight(_indirectLight);
+ }
+ 
++void EngineImpl::setACESLegacyColorGrading(double exposureStops) {
++  std::unique_lock lock(_mutex);
++  if (!_view) {
++    throw std::runtime_error("View not initialized");
++  }
++
++  ACESLegacyToneMapper toneMapper;
++  ColorGrading* colorGrading = ColorGrading::Builder()
++                                    .toneMapper(&toneMapper)
++                                    .exposure(static_cast<float>(exposureStops))
++                                    .build(*_engine);
++  auto dispatcher = _rendererDispatcher;
++  auto ownedColorGrading = References<ColorGrading>::adoptEngineRef(
++      _engine, colorGrading, [dispatcher](std::shared_ptr<Engine> engine, ColorGrading* grading) {
++        dispatcher->runAsync([engine, grading]() {
++          Logger::log(TAG, "Destroying color grading...");
++          engine->destroy(grading);
++        });
++      });
++
++  _view->setColorGrading(ownedColorGrading.get());
++  _colorGrading = std::move(ownedColorGrading);
++}
++
+ std::shared_ptr<TransformManagerWrapper> EngineImpl::createTransformManager() {
+   std::unique_lock lock(_mutex);
+   std::shared_ptr<TransformManagerImpl> transformManagerImpl = std::make_shared<TransformManagerImpl>(_engine);
+diff --git a/node_modules/react-native-filament/cpp/core/RNFEngineImpl.h b/node_modules/react-native-filament/cpp/core/RNFEngineImpl.h
+index 743a0c6..3b1b725 100644
+--- a/node_modules/react-native-filament/cpp/core/RNFEngineImpl.h
++++ b/node_modules/react-native-filament/cpp/core/RNFEngineImpl.h
+@@ -23,6 +23,7 @@
+ #include "threading/RNFDispatcher.h"
+ 
+ #include <camutils/Manipulator.h>
++#include <filament/ColorGrading.h>
+ #include <filament/Engine.h>
+ #include <filament/LightManager.h>
+ #include <filament/Renderer.h>
+@@ -55,6 +56,7 @@ public:
+   void surfaceSizeChanged(int width, int height);
+ 
+   void setIndirectLight(std::shared_ptr<FilamentBuffer> modelBuffer, std::optional<double> intensity, std::optional<int> irradianceBands);
++  void setACESLegacyColorGrading(double exposureStops);
+   std::shared_ptr<FilamentAssetWrapper> loadAsset(std::shared_ptr<FilamentBuffer> modelBuffer);
+   std::shared_ptr<FilamentAssetWrapper> loadInstancedAsset(std::shared_ptr<FilamentBuffer> modelBuffer, int instanceCount);
+   std::shared_ptr<LightManagerWrapper> createLightManager();
+@@ -88,6 +90,7 @@ private:
+   std::shared_ptr<Renderer> _renderer;
+   std::shared_ptr<SwapChain> _swapChain;
+   std::shared_ptr<Scene> _scene;
++  std::shared_ptr<ColorGrading> _colorGrading;
+   std::shared_ptr<View> _view;
+   std::shared_ptr<Camera> _camera;
+   std::shared_ptr<Manipulator<float>> _cameraManipulator;
+diff --git a/node_modules/react-native-filament/cpp/core/RNFEngineWrapper.cpp b/node_modules/react-native-filament/cpp/core/RNFEngineWrapper.cpp
+index 5960f93..8d8dbfc 100644
+--- a/node_modules/react-native-filament/cpp/core/RNFEngineWrapper.cpp
++++ b/node_modules/react-native-filament/cpp/core/RNFEngineWrapper.cpp
+@@ -37,6 +37,7 @@ void EngineWrapper::loadHybridMethods() {
+   registerHybridMethod("createSwapChainForRecorder", &EngineWrapper::createSwapChainForRecorder, this);
+   registerHybridMethod("setSwapChain", &EngineWrapper::setSwapChain, this);
+   registerHybridMethod("setIndirectLight", &EngineWrapper::setIndirectLight, this);
++  registerHybridMethod("setACESLegacyColorGrading", &EngineWrapper::setACESLegacyColorGrading, this);
+   registerHybridMethod("loadAsset", &EngineWrapper::loadAsset, this);
+   registerHybridMethod("loadInstancedAsset", &EngineWrapper::loadInstancedAsset, this);
+   registerHybridMethod("getScene", &EngineWrapper::getScene, this);
+@@ -99,6 +100,9 @@ void EngineWrapper::setIndirectLight(std::shared_ptr<FilamentBuffer> modelBuffer
+                                      std::optional<int> irradianceBands) {
+   pointee()->setIndirectLight(modelBuffer, intensity, irradianceBands);
+ }
++void EngineWrapper::setACESLegacyColorGrading(double exposureStops) {
++  pointee()->setACESLegacyColorGrading(exposureStops);
++}
+ std::shared_ptr<FilamentAssetWrapper> EngineWrapper::loadAsset(std::shared_ptr<FilamentBuffer> modelBuffer) {
+   return pointee()->loadAsset(modelBuffer);
+ }
+diff --git a/node_modules/react-native-filament/cpp/core/RNFEngineWrapper.h b/node_modules/react-native-filament/cpp/core/RNFEngineWrapper.h
+index a3302a1..12ce594 100644
+--- a/node_modules/react-native-filament/cpp/core/RNFEngineWrapper.h
++++ b/node_modules/react-native-filament/cpp/core/RNFEngineWrapper.h
+@@ -66,6 +66,7 @@ private: // Exposed public JS API
+   std::shared_ptr<SwapChainWrapper> createSwapChainForRecorder(std::shared_ptr<FilamentRecorder> recorder);
+   void setSwapChain(std::shared_ptr<SwapChainWrapper> swapChainWrapper);
+   void setIndirectLight(std::shared_ptr<FilamentBuffer> modelBuffer, std::optional<double> intensity, std::optional<int> irradianceBands);
++  void setACESLegacyColorGrading(double exposureStops);
+   std::shared_ptr<FilamentAssetWrapper> loadAsset(std::shared_ptr<FilamentBuffer> modelBuffer);
+   std::shared_ptr<FilamentAssetWrapper> loadInstancedAsset(std::shared_ptr<FilamentBuffer> modelBuffer, int instanceCount);
+   std::shared_ptr<SceneWrapper> getScene();
+diff --git a/node_modules/react-native-filament/lib/typescript/types/Engine.d.ts b/node_modules/react-native-filament/lib/typescript/types/Engine.d.ts
+index abb0b1a..8965971 100644
+--- a/node_modules/react-native-filament/lib/typescript/types/Engine.d.ts
++++ b/node_modules/react-native-filament/lib/typescript/types/Engine.d.ts
+@@ -35,6 +35,8 @@ export interface Engine extends PointerHolder {
+      * @param irradianceBands Number of spherical harmonics bands. Must be 1, 2 or 3. Default: 3
+      */
+     setIndirectLight(iblBuffer: FilamentBuffer, intensity: number | undefined, irradianceBands: number | undefined): void;
++    /** Apply Filament's Three.js-compatible legacy ACES tone mapper with exposure in EV stops. */
++    setACESLegacyColorGrading(exposureStops: number): void;
+     /**
+      * Given a @see FilamentBuffer (e.g. from a .glb file), load the asset into the engine.
+      * This will by default add all entities from the asset to the attached default scene.
+diff --git a/node_modules/react-native-filament/src/types/Engine.ts b/node_modules/react-native-filament/src/types/Engine.ts
+index 05bf297..50d8846 100644
+--- a/node_modules/react-native-filament/src/types/Engine.ts
++++ b/node_modules/react-native-filament/src/types/Engine.ts
+@@ -42,6 +42,9 @@ export interface Engine extends PointerHolder {
+    */
+   setIndirectLight(iblBuffer: FilamentBuffer, intensity: number | undefined, irradianceBands: number | undefined): void
+ 
++  /** Apply Filament's Three.js-compatible legacy ACES tone mapper with exposure in EV stops. */
++  setACESLegacyColorGrading(exposureStops: number): void
++
+   /**
+    * Given a @see FilamentBuffer (e.g. from a .glb file), load the asset into the engine.
+    * This will by default add all entities from the asset to the attached default scene.

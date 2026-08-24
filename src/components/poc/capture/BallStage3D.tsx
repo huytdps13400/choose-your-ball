@@ -24,6 +24,8 @@ import {
   cameraOrbitPosition,
   cameraProjectionArguments,
   FILAMENT_CAMERA,
+  FILAMENT_COLOR_GRADING,
+  FILAMENT_ENVIRONMENT_INTENSITY,
   filamentDirectLights,
   hexToLinearRgba,
 } from "./BallStage3D.contract";
@@ -135,6 +137,17 @@ function SceneLight({ light }: { light: FilamentDirectLightContract }): null {
   return null;
 }
 
+function SceneColorGrading(): null {
+  const { engine } = useFilamentContext();
+
+  useWorkletEffect(() => {
+    "worklet";
+    engine.setACESLegacyColorGrading(FILAMENT_COLOR_GRADING.exposureStops);
+  });
+
+  return null;
+}
+
 function BallModel({ offset, variant }: Pick<BallStage3DProps, "offset" | "variant">): JSX.Element {
   const upperTexture = useBallFilamentTextures()[variant];
   const filamentOffset = useFilamentSharedValueBridge(offset, 0);
@@ -211,7 +224,11 @@ function BallScene({ offset, reducedMotion, size, tilt, variant }: BallStage3DPr
       <SceneLight light={lights.fill} />
       <SceneLight light={lights.rim} />
       <SceneLight light={lights.rimBack} />
-      <EnvironmentalLight intensity={25_000} source={FILAMENT_ENVIRONMENT_SOURCE} />
+      <SceneColorGrading />
+      <EnvironmentalLight
+        intensity={FILAMENT_ENVIRONMENT_INTENSITY}
+        source={FILAMENT_ENVIRONMENT_SOURCE}
+      />
       <BallModel offset={offset} variant={variant} />
     </FilamentView>
   );

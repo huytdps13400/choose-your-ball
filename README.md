@@ -6,21 +6,9 @@ The original `pokemon-card` project remains on its Three.js/WebGPU renderer. Thi
 
 ## Showcase
 
-<p align="center">
-  <a href="./media/choose-your-ball-showcase.mp4">
-    <img
-      src="./media/choose-your-ball-showcase-poster.jpg"
-      alt="Choose Your Ball — React Native Filament showcase"
-      width="395"
-    />
-  </a>
-</p>
+[![Choose Your Ball animated showcase](./media/choose-your-ball-preview.gif)](./media/choose-your-ball-showcase.mp4)
 
-<p align="center">
-  <a href="./media/choose-your-ball-showcase.mp4"><strong>▶ Watch the 60-second showcase</strong></a>
-  ·
-  <a href="https://x.com/TrninhHuy1/status/2084748199903011268">View the original post on X ↗</a>
-</p>
+[▶ Watch the full 60-second showcase](./media/choose-your-ball-showcase.mp4) · [View the original post on X ↗](https://x.com/TrninhHuy1/status/2084748199903011268)
 
 The showcase demonstrates the full selection loop: horizontal swipe and thumbnail navigation, spring-settled transitions, complete shell rotation, vertical free-look, and glossy HDR material response across the ball catalog.
 
